@@ -32,8 +32,11 @@ function App() {
   const [, setTaskCatalogVersion] = useState(0);
   const [unityCommunicationAvailable, setUnityCommunicationAvailable] =
     useState(isUnityCommunicationAvailable());
+  const rootTaskId =
+    new URLSearchParams(location.search).get('taskId')?.trim() ?? '';
   const isDemoRoute = location.pathname === '/demo';
-  const isRuntimeRoute = location.pathname === '/runtime';
+  const isRootRuntimeRoute = location.pathname === '/' && Boolean(rootTaskId);
+  const isRuntimeRoute = location.pathname === '/runtime' || isRootRuntimeRoute;
 
   const handleOpenLearningTask = useCallback((request: OpenTaskRequest) => {
     const taskId = request.taskId.trim();
@@ -109,27 +112,34 @@ function App() {
     setUnityCommunicationAvailable(unitySendResult.unityAvailable);
   }
 
+  const runtimePage = (
+    <RuntimePage
+      activeTaskId={bridgeTaskId}
+      bridgeError={bridgeError}
+      onOpenTask={handleRuntimeOpenTask}
+      onCloseTask={handleCloseBridgeOverlay}
+      onTaskCompleted={handleBridgeTaskCompleted}
+    />
+  );
+
   return (
     <div className="app-shell">
       {!isRuntimeRoute && <AppNavigation />}
       <main className={isRuntimeRoute ? 'runtime-content' : 'page-content'}>
         <Routes>
-          <Route path="/" element={<Navigate to="/editor" replace />} />
+          <Route
+            path="/"
+            element={
+              isRootRuntimeRoute ? runtimePage : <Navigate to="/editor" replace />
+            }
+          />
           <Route path="/editor" element={<EditorPage />} />
           <Route path="/editor/:taskId/edit" element={<EditorPage />} />
           <Route path="/editor-library" element={<EditorLibraryPage />} />
           <Route path="/play/:taskId" element={<TaskPlayerPage />} />
           <Route
             path="/runtime"
-            element={
-              <RuntimePage
-                activeTaskId={bridgeTaskId}
-                bridgeError={bridgeError}
-                onOpenTask={handleRuntimeOpenTask}
-                onCloseTask={handleCloseBridgeOverlay}
-                onTaskCompleted={handleBridgeTaskCompleted}
-              />
-            }
+            element={runtimePage}
           />
           <Route
             path="/demo"

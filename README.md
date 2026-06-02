@@ -85,8 +85,20 @@ The direct WebGL product-path test is:
 ```
 
 In that path, Unity is not wrapped by the React demo page. The custom Unity
-WebGL template opens `/runtime?taskId=...` inside an iframe overlay and forwards
+WebGL template opens the hosted Runtime inside an iframe overlay and forwards
 Runtime `postMessage` results to `unityInstance.SendMessage`.
+
+For local development the Runtime can be opened with:
+
+```text
+/runtime?taskId=test_01
+```
+
+For GitHub Pages hosting, use the repository root with the same query string:
+
+```text
+https://zsoltf94.github.io/learning-task-runtime/?taskId=test_01
+```
 
 ## Unity Bridge Interface
 

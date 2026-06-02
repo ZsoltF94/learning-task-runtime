@@ -119,7 +119,7 @@ The MVP flow should be:
 5. User can test the local wrapper flow on /demo.
 6. Unity WebGL uses the custom WebGL template for the product flow.
 7. Unity calls StartTask("task_id").
-8. The template opens /runtime?taskId=task_id in an iframe overlay.
+8. The template opens the hosted Runtime URL with ?taskId=task_id in an iframe overlay.
 9. The runtime loads the task from local, remote, or later SaaS data.
 10. Player solves the task.
 11. TaskResult is created.
@@ -426,10 +426,10 @@ The remote task source is read-only in this MVP. The local editor continues to
 save tasks in localStorage. Local custom tasks should override remote tasks with
 the same ID so local testing remains predictable.
 
-For the MVP, the template uses the same origin Runtime by default:
+For the current itch.io MVP test, the template uses the GitHub Pages Runtime:
 
 ```text
-/runtime
+https://zsoltf94.github.io/learning-task-runtime/
 ```
 
 For hosted builds, the template can be configured before startup with:
@@ -439,7 +439,8 @@ window.LEARNING_TASK_RUNTIME_URL = "https://your-saas-domain.com/runtime"
 ```
 
 Later this URL should become the SaaS-hosted runtime URL. The current local
-fallback avoids hardcoding a specific dev-server port.
+development path can still use `/runtime`, but GitHub Pages should use the
+repository root with `?taskId=...` to avoid SPA fallback 404 requests.
 
 The temporary MVP hosting path for the Runtime is GitHub Pages. The deployment
 workflow and manual setup steps are documented in:

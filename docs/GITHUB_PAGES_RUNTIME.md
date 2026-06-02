@@ -29,7 +29,7 @@ learning-task-runtime
 If the repository is named `learning-task-runtime`, the Runtime URL will be:
 
 ```text
-https://zsoltf94.github.io/learning-task-runtime/runtime?taskId=test_01
+https://zsoltf94.github.io/learning-task-runtime/?taskId=test_01
 ```
 
 ## GitHub Pages Setup
@@ -82,14 +82,17 @@ config to use the hosted Runtime:
 
 ```js
 window.LEARNING_TASK_RUNTIME_URL =
-  "https://zsoltf94.github.io/learning-task-runtime/runtime";
+  "https://zsoltf94.github.io/learning-task-runtime/";
 ```
 
 Then the Unity WebGL template can open:
 
 ```text
-https://zsoltf94.github.io/learning-task-runtime/runtime?taskId=test_01
+https://zsoltf94.github.io/learning-task-runtime/?taskId=test_01
 ```
+
+Use the root URL with `?taskId=...` on GitHub Pages. This avoids the direct
+`/runtime` request returning a 404 before the SPA fallback loads.
 
 ## Smoke Test
 

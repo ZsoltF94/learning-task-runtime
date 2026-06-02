@@ -125,9 +125,11 @@
       const learningTaskError = document.querySelector("#learning-task-error");
       const learningTaskErrorMessage = document.querySelector("#learning-task-error-message");
       const learningTaskErrorClose = document.querySelector("#learning-task-error-close");
-      // Local builds use the same origin Runtime. Hosted builds can set
-      // window.LEARNING_TASK_RUNTIME_URL before this script to use the SaaS Runtime.
-      const learningTaskRuntimeUrl = window.LEARNING_TASK_RUNTIME_URL || "/runtime";
+      // Local dev can override this before startup. The current MVP test build
+      // points at the GitHub Pages Runtime that will also be used for itch.io.
+      const learningTaskRuntimeUrl =
+        window.LEARNING_TASK_RUNTIME_URL ||
+        "https://zsoltf94.github.io/learning-task-runtime/";
       const learningTaskMessageSource = "learning-task-runtime";
       const learningTaskTargetObjectName = "LearningTaskBridge";
       const learningTaskTargetMethodName = "ReceiveTaskResult";

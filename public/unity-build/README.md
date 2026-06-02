@@ -50,21 +50,25 @@ learning-task bridge setup:
 These lines allow the Runtime to send task results back to Unity after each
 build.
 
-For local testing, the template Runtime URL defaults to:
+For the current itch.io MVP test, the template Runtime URL defaults to:
 
 ```text
-/runtime
+https://zsoltf94.github.io/learning-task-runtime/
 ```
 
-That means the Unity build and Runtime are loaded from the same local dev server
-origin, for example:
+That hosted Runtime loads task data from:
 
 ```text
-http://127.0.0.1:5173/unity-build/index.html
-http://127.0.0.1:5173/runtime?taskId=test_01
+https://zsoltf94.github.io/learning-task-data/tasks.json
 ```
 
-For hosted builds, set this before the template opens tasks:
+For pure local development, override the template before startup:
+
+```text
+window.LEARNING_TASK_RUNTIME_URL = "/runtime"
+```
+
+For future hosted SaaS builds, set this before the template opens tasks:
 
 ```html
 <script>
@@ -72,9 +76,7 @@ For hosted builds, set this before the template opens tasks:
 </script>
 ```
 
-Later this should point to the SaaS-hosted Runtime URL. Avoid hardcoding a local
-dev-server port in the template unless the build is only for a temporary manual
-test.
+Later this should point to the SaaS-hosted Runtime URL.
 
 For local testing, use a Unity WebGL build with compression disabled unless the
 dev server is configured to serve `.br` or `.gz` files with the correct
@@ -91,10 +93,10 @@ Smoke test checklist:
 
 ```text
 1. Start Vite on http://127.0.0.1:5173.
-2. Open /runtime?taskId=test_01 and confirm the task opens.
+2. Open /runtime?taskId=test_01 and confirm the local Runtime opens.
 3. Open /unity-build/index.html.
 4. Trigger Unity StartTask("test_01").
-5. Confirm the Runtime iframe overlay opens above the Unity canvas.
+5. Confirm the hosted Runtime iframe overlay opens above the Unity canvas.
 6. Click Check Answer.
 7. Confirm feedback remains visible.
 8. Confirm Unity receives the TaskResult.
