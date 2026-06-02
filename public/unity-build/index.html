@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+    <meta
+      name="viewport"
+      content="width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    >
+
+    <title>Unity Web Player | Forgotten Demo</title>
+
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #000;
+        touch-action: none;
+        overscroll-behavior: none;
+        -webkit-user-select: none;
+        user-select: none;
+      }
+
+      #unity-container {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        height: 100dvh;
+        overflow: hidden;
+        background: #000;
+      }
+
+      #unity-canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+        background: #231F20;
+      }
+
+      #learning-task-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        display: none;
+        background: rgba(15, 23, 42, 0.64);
+      }
+
+      #learning-task-overlay.visible {
+        display: block;
+      }
+
+      #learning-task-frame {
+        width: 100%;
+        height: 100%;
+        border: 0;
+        background: transparent;
+      }
+
+      #learning-task-error {
+        position: absolute;
+        top: 16px;
+        left: 16px;
+        right: 16px;
+        display: none;
+        border: 1px solid #dc2626;
+        border-radius: 8px;
+        background: #fef2f2;
+        padding: 1rem;
+        color: #991b1b;
+        font-family: Arial, sans-serif;
+        font-weight: 700;
+      }
+
+      #learning-task-error.visible {
+        display: block;
+      }
+
+      #learning-task-error button {
+        margin-top: 0.75rem;
+        border: 1px solid #dc2626;
+        border-radius: 6px;
+        background: #ffffff;
+        padding: 0.5rem 0.75rem;
+        color: #991b1b;
+        cursor: pointer;
+        font: inherit;
+      }
+    </style>
+
+  </head>
+
+  <body>
+    <div id="unity-container">
+      <canvas id="unity-canvas" tabindex="-1"></canvas>
+
+      <div id="learning-task-overlay" aria-label="Learning task overlay">
+        <iframe
+          id="learning-task-frame"
+          title="Learning task runtime"
+          allow="fullscreen"
+        ></iframe>
+        <div id="learning-task-error">
+          <div id="learning-task-error-message"></div>
+          <button id="learning-task-error-close" type="button">Close</button>
+        </div>
+      </div>
+
+    </div>
+
+    <script src="Build/unity-build.loader.js"></script>
+
+    <script>
+      const unityContainer = document.querySelector("#unity-container");
+      const unityCanvas = document.querySelector("#unity-canvas");
+      const learningTaskOverlay = document.querySelector("#learning-task-overlay");
+      const learningTaskFrame = document.querySelector("#learning-task-frame");
+      const learningTaskError = document.querySelector("#learning-task-error");
+      const learningTaskErrorMessage = document.querySelector("#learning-task-error-message");
+      const learningTaskErrorClose = document.querySelector("#learning-task-error-close");
+      // Local builds use the same origin Runtime. Hosted builds can set
+      // window.LEARNING_TASK_RUNTIME_URL before this script to use the SaaS Runtime.
+      const learningTaskRuntimeUrl = window.LEARNING_TASK_RUNTIME_URL || "/runtime";
+      const learningTaskMessageSource = "learning-task-runtime";
+      const learningTaskTargetObjectName = "LearningTaskBridge";
+      const learningTaskTargetMethodName = "ReceiveTaskResult";
+
+      function createLearningTaskRuntimeUrl(taskId) {
+        const runtimeUrl = new URL(learningTaskRuntimeUrl, window.location.href);
+        runtimeUrl.searchParams.set("taskId", taskId);
+
+        return runtimeUrl.toString();
+      }
+
+      function showLearningTaskError(message) {
+        learningTaskErrorMessage.textContent = message;
+        learningTaskError.classList.add("visible");
+        learningTaskOverlay.classList.add("visible");
+      }
+
+      function clearLearningTaskError() {
+        learningTaskErrorMessage.textContent = "";
+        learningTaskError.classList.remove("visible");
+      }
+
+      function closeLearningTaskOverlay() {
+        learningTaskFrame.removeAttribute("src");
+        learningTaskOverlay.classList.remove("visible");
+        clearLearningTaskError();
+        unityCanvas.focus();
+      }
+
+      function openLearningTask(taskId) {
+        const normalizedTaskId = typeof taskId === "string" ? taskId.trim() : "";
+
+        if (!normalizedTaskId) {
+          showLearningTaskError("Learning task id is required.");
+          return;
+        }
+
+        clearLearningTaskError();
+        learningTaskFrame.src = createLearningTaskRuntimeUrl(normalizedTaskId);
+        learningTaskOverlay.classList.add("visible");
+        learningTaskFrame.focus();
+      }
+
+      function isRuntimeTaskResult(value) {
+        return (
+          value &&
+          typeof value.taskId === "string" &&
+          typeof value.success === "boolean" &&
+          typeof value.score === "number" &&
+          typeof value.attempts === "number"
+        );
+      }
+
+      function sendLearningTaskResultToUnity(result) {
+        const payload = JSON.stringify({
+          taskId: result.taskId,
+          success: result.success,
+          score: result.score,
+          attempts: result.attempts
+        });
+
+        if (!window.unityInstance || typeof window.unityInstance.SendMessage !== "function") {
+          console.warn("Unity instance is not available for learning task result.", payload);
+          return;
+        }
+
+        window.unityInstance.SendMessage(
+          learningTaskTargetObjectName,
+          learningTaskTargetMethodName,
+          payload
+        );
+        console.info("Learning task result forwarded to Unity:", payload);
+      }
+
+      window.openLearningTask = openLearningTask;
+
+      learningTaskFrame.addEventListener("error", function () {
+        showLearningTaskError("Learning task runtime could not be loaded.");
+      });
+
+      learningTaskErrorClose.addEventListener("click", closeLearningTaskOverlay);
+
+      window.addEventListener("message", function (event) {
+        const message = event.data;
+
+        if (!message || message.source !== learningTaskMessageSource) {
+          return;
+        }
+
+        if (message.type === "task-close") {
+          closeLearningTaskOverlay();
+          return;
+        }
+
+        if (message.type === "task-result" && isRuntimeTaskResult(message.result)) {
+          sendLearningTaskResultToUnity(message.result);
+        }
+      });
+
+      function getViewportSize() {
+        const viewport = window.visualViewport;
+
+        const width = Math.round(viewport ? viewport.width : window.innerWidth);
+        const height = Math.round(viewport ? viewport.height : window.innerHeight);
+
+        return {
+          width: Math.max(1, width),
+          height: Math.max(1, height)
+        };
+      }
+
+      function resizeUnityCanvas() {
+        const size = getViewportSize();
+
+        unityContainer.style.width = size.width + "px";
+        unityContainer.style.height = size.height + "px";
+
+        unityCanvas.style.width = size.width + "px";
+        unityCanvas.style.height = size.height + "px";
+
+        unityCanvas.width = size.width;
+        unityCanvas.height = size.height;
+      }
+
+      function scheduleResize() {
+        resizeUnityCanvas();
+
+        requestAnimationFrame(resizeUnityCanvas);
+        setTimeout(resizeUnityCanvas, 100);
+        setTimeout(resizeUnityCanvas, 300);
+        setTimeout(resizeUnityCanvas, 700);
+      }
+
+      window.addEventListener("resize", scheduleResize);
+      window.addEventListener("orientationchange", scheduleResize);
+
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener("resize", scheduleResize);
+        window.visualViewport.addEventListener("scroll", scheduleResize);
+      }
+
+      document.addEventListener(
+        "touchmove",
+        function (event) {
+          event.preventDefault();
+        },
+        { passive: false }
+      );
+
+      scheduleResize();
+
+
+      createUnityInstance(unityCanvas, {
+        arguments: [],
+        dataUrl: "Build/unity-build.data",
+        frameworkUrl: "Build/unity-build.framework.js",
+        codeUrl: "Build/unity-build.wasm",
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: "FSF Games",
+        productName: "Forgotten Demo",
+        productVersion: "1.0",
+
+        matchWebGLToCanvasSize: false,
+        devicePixelRatio: 1
+      }).then((unityInstance) => {
+        window.unityInstance = unityInstance;
+
+        if (window.parent && window.parent !== window) {
+          window.parent.dispatchEvent(
+            new CustomEvent("learningTaskUnityInstanceReady")
+          );
+        }
+
+        scheduleResize();
+
+      }).catch((message) => {
+        alert(message);
+      });
+    </script>
+  </body>
+</html>
